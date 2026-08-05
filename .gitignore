@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+ENV/
+
+# IDE / éditeur
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Systèmes
+.DS_Store
+Thumbs.db
+
+# Logs et caches
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build / distribution
+build/
+dist/
+*.egg-info/
+
+# Docker
+.docker/
+*.tar
+
+# PostgreSQL / base locale
+*.sqlite3
+*.db
+*.dump
+
+# Secrets / variables locales
+.env
+.env.*
+!.env.example
+
+# Covers for Jupyter / notebooks
+.ipynb_checkpoints/
+
+# Coverage / reports
+coverage.xml
