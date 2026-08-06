@@ -15,6 +15,9 @@ class DepotFacture:
     def obtenir_facture(self, identifiant_facture):
         return self.factures[identifiant_facture] if identifiant_facture < len(self.factures) else None
 
+    def obtenir_toutes_les_factures(self):
+        return self.factures
+
     def mettre_a_jour_facture(self, identifiant_facture, **kwargs):
         if identifiant_facture < len(self.factures):
             self.factures[identifiant_facture].update(kwargs)

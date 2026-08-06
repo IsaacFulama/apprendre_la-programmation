@@ -8,6 +8,9 @@ class ServiceFacture:
     def obtenir_facture(self, identifiant_facture):
         return self.depot_facture.obtenir_facture(identifiant_facture)
 
+    def obtenir_toutes_les_factures(self):
+        return self.depot_facture.obtenir_toutes_les_factures()
+
     def mettre_a_jour_facture(self, identifiant_facture, **kwargs):
         return self.depot_facture.mettre_a_jour_facture(identifiant_facture, **kwargs)
 
