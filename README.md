@@ -43,6 +43,15 @@ uvicorn app.api.main_api:app --reload
 L’interface Swagger sera disponible sur :
 - http://127.0.0.1:8000/docs
 
+## Lancer l’interface web Streamlit
+
+```powershell
+streamlit run app/ui/streamlit_app.py
+```
+
+L’interface web sera disponible sur :
+- http://localhost:8501
+
 ## Exécuter les tests
 
 ```powershell
