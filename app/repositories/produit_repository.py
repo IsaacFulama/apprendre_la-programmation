@@ -52,16 +52,11 @@ class DepotProduit:
         return self._convertir_en_modele(ligne) if ligne else None
 
     def create(self, produit):
+        # Laisser SQLite attribuer la clé primaire évite les collisions liées à len(...) + 1.
         with self._get_connection() as connexion:
             curseur = connexion.execute(
-                "INSERT INTO produits (identifiant_produit, nom, description, prix, quantite) VALUES (?, ?, ?, ?, ?)",
-                (
-                    produit.identifiant_produit,
-                    produit.nom,
-                    produit.description,
-                    produit.prix,
-                    produit.quantite,
-                ),
+                "INSERT INTO produits (nom, description, prix, quantite) VALUES (?, ?, ?, ?)",
+                (produit.nom, produit.description, produit.prix, produit.quantite),
             )
             connexion.commit()
             identifiant = curseur.lastrowid
@@ -84,9 +79,12 @@ class DepotProduit:
 
     def delete(self, identifiant_produit):
         with self._get_connection() as connexion:
-            connexion.execute("DELETE FROM produits WHERE identifiant_produit = ?", (identifiant_produit,))
+            curseur = connexion.execute(
+                "DELETE FROM produits WHERE identifiant_produit = ?",
+                (identifiant_produit,),
+            )
             connexion.commit()
-        return True
+        return curseur.rowcount > 0
 
     def _convertir_en_modele(self, ligne):
         if ligne is None:
