@@ -1,45 +1,87 @@
-# Import the test client from FastAPI.
+import pytest
 from fastapi.testclient import TestClient
 
-# Import the FastAPI application.
 from app.api.main_api import app
-
-# Create one client instance for the whole test file.
-client = TestClient(app)
-
-
-# Test the home route.
-def test_accueil():
-    # Send a GET request to the home page.
-    reponse = client.get("/")
-    # The response should be successful.
-    assert reponse.status_code == 200
-    # The response body should contain the expected welcome message.
-    assert reponse.json()["message"] == "Bienvenue sur l'API de stock"
+from app.controllers.produit_controller import get_service_produit
+from app.repositories.produit_repository import DepotProduit
+from app.services.produitService import ServiceProduit
 
 
-# Test the route that lists products.
-def test_lister_produits():
-    # Send a GET request to list the products.
-    reponse = client.get("/produits")
-    # The response should be successful.
-    assert reponse.status_code == 200
-    # The response body should be a list.
-    assert isinstance(reponse.json(), list)
+@pytest.fixture
+def client(tmp_path):
+    depot = DepotProduit(tmp_path / "test-produits.db")
+    service = ServiceProduit(depot)
+    app.dependency_overrides[get_service_produit] = lambda: service
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
 
 
-# Test the route that creates a product.
-def test_creer_produit():
-    # Build a payload with a product example.
-    payload = {
-        "nom": "Produit test",
+def _payload(nom="Produit test", prix=15.5, quantite=3):
+    return {
+        "nom": nom,
         "description": "Description test",
-        "prix": 15.5,
-        "quantite": 3,
+        "prix": prix,
+        "quantite": quantite,
     }
-    # Send a POST request with the payload.
-    reponse = client.post("/produits", json=payload)
-    # The request should succeed.
-    assert reponse.status_code == 200
-    # The created product should have the provided name.
-    assert reponse.json()["nom"] == "Produit test"
+
+
+def test_accueil(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json()["message"] == "Bienvenue sur l'API de stock"
+
+
+def test_lister_produits(client):
+    response = client.get("/produits")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_creer_produit_retourne_identifiant_persistant(client):
+    response = client.post("/produits", json=_payload())
+    assert response.status_code == 201
+    produit = response.json()
+    assert produit["id"] == 1
+    assert produit["nom"] == "Produit test"
+
+    reread = client.get(f"/produits/{produit['id']}")
+    assert reread.status_code == 200
+    assert reread.json() == produit
+
+
+def test_creation_apres_suppression_ne_collisionne_pas(client):
+    premier = client.post("/produits", json=_payload(nom="Premier")).json()
+    deuxieme = client.post("/produits", json=_payload(nom="Deuxième")).json()
+    troisieme = client.post("/produits", json=_payload(nom="Troisième")).json()
+
+    assert client.delete(f"/produits/{premier['id']}").status_code == 200
+
+    suivant = client.post("/produits", json=_payload(nom="Suivant"))
+    assert suivant.status_code == 201
+    assert suivant.json()["id"] not in {deuxieme["id"], troisieme["id"]}
+    assert suivant.json()["nom"] == "Suivant"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        _payload(nom="   "),
+        _payload(prix=-1),
+        _payload(prix=0),
+        _payload(quantite=-1),
+    ],
+)
+def test_creation_rejette_les_donnees_invalides(client, payload):
+    response = client.post("/produits", json=payload)
+    assert response.status_code == 422
+
+
+def test_suppression_produit_absent_retourne_404(client):
+    response = client.delete("/produits/999999")
+    assert response.status_code == 404
+
+
+def test_modification_produit_absent_retourne_404(client):
+    response = client.put("/produits/999999", json=_payload())
+    assert response.status_code == 404
