@@ -1,5 +1,7 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 from app.models.produit import Produit
 
@@ -10,10 +12,17 @@ class DepotProduit:
         self.db_path = Path(db_path) if db_path else base_dir / "produits.db"
         self._initialiser_schema()
 
-    def _get_connection(self):
+    @contextmanager
+    def _get_connection(self) -> Iterator[sqlite3.Connection]:
         connexion = sqlite3.connect(self.db_path)
         connexion.row_factory = sqlite3.Row
-        return connexion
+        try:
+            # Le context manager sqlite gère commit/rollback ; le finally ferme
+            # explicitement la connexion pour éviter une fuite de ressources.
+            with connexion:
+                yield connexion
+        finally:
+            connexion.close()
 
     def _initialiser_schema(self):
         with self._get_connection() as connexion:
